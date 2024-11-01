@@ -1,116 +1,164 @@
-// src/screens/HomeScreen.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
-  TextInput,
-  ScrollView,
   TouchableOpacity,
   Text,
   StyleSheet,
   Image,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebaseConfig'; // Asegúrate de tener bien configurado Firebase
+
+// Importación de imágenes fuera del componente
+import allIcon from '../assets/icons/all.png';
+import wifiIcon from '../assets/icons/wifi.png';
+import deletedIcon from '../assets/icons/deleted.png';
+import profileIcon from '../assets/icons/profile.png';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const [username, setUsername] = useState('');
 
+  useEffect(() => {
+    const fetchUsername = async () => {
+      try {
+        const userId = auth.currentUser.uid;
+        const userDocRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUsername(userData.nombre); // Asignar el nombre del usuario
+        } else {
+          Alert.alert('Error', 'No se encontró el usuario.');
+        }
+      } catch (error) {
+        console.error('Error al obtener el nombre del usuario:', error);
+        Alert.alert('Error', 'Hubo un problema al cargar la información del usuario.');
+      }
+    };
+
+    fetchUsername();
+  }, []);
+
+  // Categorías del menú
   const categories = [
-    { name: 'Todas', icon: require('../assets/icons/all.png') },
-    { name: 'Llaves', icon: require('../assets/icons/keys.png') },
-    { name: 'Códigos', icon: require('../assets/icons/codes.png') },
-    { name: 'Wi-Fi', icon: require('../assets/icons/wifi.png') },
-    { name: 'Seguridad', icon: require('../assets/icons/security.png') },
-    { name: 'Eliminadas', icon: require('../assets/icons/deleted.png') },
+    { name: 'password', color: '#ff8d06', icon: allIcon },
+    { name: 'wifi', color: '#b745f7', icon: wifiIcon },
+    { name: 'Eliminados', color: '#ff5640', icon: deletedIcon },
   ];
 
   const handleCategoryPress = (category) => {
-    navigation.navigate('PasswordsList', { category });
+    if (category === 'Eliminados') {
+      navigation.navigate('DeletePassword');
+    } else if (category === 'wifi') {
+      navigation.navigate('WifiList');
+    } else {
+      navigation.navigate('PasswordsList', { category });
+    }
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      <TextInput
-        placeholder="Buscar"
-        style={styles.searchBar}
-        placeholderTextColor="#999"
-      />
-      <View style={styles.categoriesContainer}>
-        {categories.map((category, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.categoryButton}
-            onPress={() => handleCategoryPress(category.name)}
-          >
-            <View style={styles.categoryIconContainer}>
-              <Image source={category.icon} style={styles.categoryIcon} />
-            </View>
-            <Text style={styles.categoryText}>{category.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <View style={styles.sharedSection}>
-        <Text style={styles.sectionTitle}>Grupos Compartidos</Text>
-        <TouchableOpacity style={styles.newGroupButton}>
-          <Text style={styles.newGroupButtonText}>Crear Nuevo Grupo</Text>
+
+      {/* Icono de perfil en la parte superior derecha */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <Image source={profileIcon} style={styles.profileIcon} />
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.shareFamilyButton}>
-        <Text style={styles.shareFamilyText}>Compartir con Familia</Text>
-      </TouchableOpacity>
-    </ScrollView>
+
+      {/* Título con el nombre del usuario */}
+      <Text style={styles.welcomeText}>Bienvenido, {username}!</Text>
+
+      <View style={styles.categoriesContainer}>
+        <View style={styles.topRow}>
+          {categories.slice(0, 2).map((category, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.categoryButton, { backgroundColor: category.color }]}
+              onPress={() => handleCategoryPress(category.name)}
+            >
+              <Image source={category.icon} style={styles.categoryIcon} />
+              <Text style={styles.categoryText}>{category.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity
+          style={[styles.categoryButtonLarge, { backgroundColor: categories[2].color }]}
+          onPress={() => handleCategoryPress(categories[2].name)}
+        >
+          <Image source={categories[2].icon} style={styles.categoryIcon} />
+          <Text style={styles.categoryText}>{categories[2].name}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  searchBar: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f7f7f7',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 20,
+  },
+  profileIcon: {
+    width: 50,
     height: 50,
-    margin: 20,
-    backgroundColor: '#f0f0f0',
     borderRadius: 25,
-    paddingHorizontal: 20,
-    fontSize: 16,
+  },
+  welcomeText: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    textAlign: 'left',
+    marginBottom: 20,
     color: '#333',
   },
   categoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 20,
   },
-  categoryButton: {
-    width: '30%',
-    alignItems: 'center',
-    marginBottom: 30,
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 20,
   },
-  categoryIconContainer: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 50,
-    padding: 15,
+  categoryButton: {
+    width: '45%',
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  categoryButtonLarge: {
+    width: '95%',
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  categoryIcon: {
+    width: 50,
+    height: 50,
     marginBottom: 10,
   },
-  categoryIcon: { width: 40, height: 40 },
-  categoryText: { fontSize: 14, color: '#333', textAlign: 'center' },
-  sharedSection: { paddingHorizontal: 20, marginTop: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#333' },
-  newGroupButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
+  categoryText: {
+    fontSize: 18,
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
-  newGroupButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  shareFamilyButton: {
-    marginTop: 30,
-    marginHorizontal: 20,
-    backgroundColor: '#28A745',
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  shareFamilyText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 });
 
 export default HomeScreen;

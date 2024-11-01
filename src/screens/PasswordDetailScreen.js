@@ -80,7 +80,7 @@ const PasswordDetailScreen = () => {
         <Text style={styles.detailText}><Text style={styles.label}>Contraseña: </Text>{passwordDetail.contraseña || 'Desconocido'}</Text>
         <Text style={styles.detailText}>
           <Text style={styles.label}>Última modificación: </Text>
-          {passwordDetail.createdAt ? passwordDetail.createdAt.toDate().toLocaleString() : 'Desconocido'}
+          {passwordDetail.lastModified ? passwordDetail.lastModified.toDate().toLocaleString() : 'Desconocido'}
         </Text>
       </View>
     </View>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 
 const EditPasswordScreen = () => {
@@ -63,9 +63,28 @@ const EditPasswordScreen = () => {
     navigation.goBack();
   };
 
-  // Función para el botón de eliminar (aún no funcional)
-  const handleDelete = () => {
-    Alert.alert('Eliminar', 'Esta función aún no está disponible.');
+  // Función para mover a la colección "eliminadas"
+  const handleDelete = async () => {
+    try {
+      const userId = auth.currentUser.uid;
+      const passwordRef = doc(db, 'users', userId, 'passwords', passwordId);
+
+      // Obtener la contraseña antes de eliminarla
+      const passwordDoc = await getDoc(passwordRef);
+      const passwordData = passwordDoc.data();
+
+      // Mover la contraseña a la colección 'eliminadas'
+      await setDoc(doc(db, 'users', userId, 'eliminadas', passwordId), passwordData);
+
+      // Eliminar la contraseña de la colección principal
+      await deleteDoc(passwordRef);
+
+      Alert.alert('Eliminada', 'La contraseña ha sido movida a "Eliminadas".');
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error al eliminar la contraseña:', error);
+      Alert.alert('Error', 'Hubo un problema al eliminar la contraseña.');
+    }
   };
 
   const handleCancel = () => {

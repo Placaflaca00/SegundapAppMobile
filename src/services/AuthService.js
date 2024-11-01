@@ -6,7 +6,7 @@ import {
   onAuthStateChanged as firebaseOnAuthStateChanged,
   sendPasswordResetEmail,
 } from 'firebase/auth';
-import { doc, setDoc, collection, addDoc, getDocs, query } from 'firebase/firestore';
+import { doc, setDoc, collection, addDoc, getDocs, query, deleteDoc } from 'firebase/firestore';
 
 // Registro de usuario
 export const registerUser = async (email, password, name, apellido) => {
@@ -100,4 +100,61 @@ export const resetPassword = async (email) => {
 export const onAuthStateChanged = (callback) => {
   return firebaseOnAuthStateChanged(auth, callback);
 };
-//jjj
+
+
+// =======================
+// Funciones para Wi-Fi
+// =======================
+
+// Guardar referencia de red Wi-Fi en Firestore
+export const saveWifiNetwork = async (userId, wifiData) => {
+  try {
+    const wifiRef = collection(db, 'users', userId, 'wifi'); // Reference to 'wifi' collection
+    await addDoc(wifiRef, wifiData); // Automatically generates a unique ID for each network
+    console.log('Red Wi-Fi guardada correctamente');
+  } catch (error) {
+    console.error('Error al guardar la red Wi-Fi:', error.message);
+    throw error;
+  }
+};
+
+// Obtener redes Wi-Fi
+export const getWifiNetworks = async (userId) => {
+  try {
+    const wifiQuery = query(collection(db, 'users', userId, 'wifi'));
+    const querySnapshot = await getDocs(wifiQuery);
+    const networks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return networks;
+  } catch (error) {
+    console.error('Error al obtener las redes Wi-Fi:', error.message);
+    throw error;
+  }
+};
+
+// Obtener detalle de red Wi-Fi específica
+export const getWifiNetworkDetail = async (userId, wifiId) => {
+  try {
+    const wifiRef = doc(db, 'users', userId, 'wifi', wifiId);
+    const wifiDoc = await getDoc(wifiRef);
+    if (wifiDoc.exists()) {
+      return { id: wifiDoc.id, ...wifiDoc.data() };
+    } else {
+      console.log('No se encontró la red Wi-Fi');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error al obtener el detalle de la red Wi-Fi:', error.message);
+    throw error;
+  }
+};
+
+// Eliminar red Wi-Fi
+export const deleteWifiNetwork = async (userId, wifiId) => {
+  try {
+    await deleteDoc(doc(db, 'users', userId, 'wifi', wifiId));
+    console.log('Red Wi-Fi eliminada correctamente');
+  } catch (error) {
+    console.error('Error al eliminar la red Wi-Fi:', error.message);
+    throw error;
+  }
+};
